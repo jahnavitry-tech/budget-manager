@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// Detect environment and set API base URL
+const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isDevelopment 
+  ? 'http://localhost:5001/api'  // Local development
+  : '/api';  // Production (Vercel will proxy to backend)
+
+console.log('API Base URL:', API_BASE_URL, 'Environment:', isDevelopment ? 'development' : 'production');
 
 // Create axios instance with default config
 const api = axios.create({
