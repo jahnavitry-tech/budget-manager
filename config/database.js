@@ -23,9 +23,19 @@ pool.on('error', (err) => {
 // Export both the pool and a connect function
 const connectDB = async () => {
   try {
-    // For demo purposes, we'll just log that we're skipping DB connection
-    console.log('Database connection skipped for demo - using in-memory data');
-    return pool;
+    if (process.env.NODE_ENV === 'production') {
+      // Production: Connect to Supabase
+      console.log('Connecting to Supabase production database...');
+      // Test connection
+      const client = await pool.connect();
+      client.release();
+      console.log('Successfully connected to Supabase database');
+      return pool;
+    } else {
+      // Development: Use in-memory data
+      console.log('Database connection skipped for demo - using in-memory data');
+      return pool;
+    }
   } catch (error) {
     console.error('Database connection failed:', error);
     throw error;
