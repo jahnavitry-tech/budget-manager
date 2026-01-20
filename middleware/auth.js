@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const pool = require('../config/database');
+const { pool } = require('../config/database');
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -12,7 +12,19 @@ const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Verify user still exists and is active
+    // Handle demo user
+    if (decoded.userId === 'demo-user-id-123') {
+      req.user = {
+        user_id: 'demo-user-id-123',
+        email: 'user@example.com',
+        full_name: 'Demo User',
+        family_account_id: 'demo-family-id-123',
+        is_active: true
+      };
+      return next();
+    }
+    
+    // Verify real user exists and is active
     const userResult = await pool.query(
       'SELECT user_id, email, full_name, family_account_id, is_active FROM users WHERE user_id = $1',
       [decoded.userId]

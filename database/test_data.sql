@@ -11,10 +11,10 @@ INSERT INTO family_accounts (family_account_id, account_name, created_by_user_id
 
 -- Insert Test Users
 INSERT INTO users (user_id, family_account_id, email, password_hash, full_name, profile_picture, last_login, is_active) VALUES
-('10000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'john.doe@example.com', '$2b$10$examplehash1', 'John Doe', 'https://example.com/avatar1.jpg', CURRENT_TIMESTAMP, TRUE),
-('10000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'jane.doe@example.com', '$2b$10$examplehash2', 'Jane Doe', 'https://example.com/avatar2.jpg', CURRENT_TIMESTAMP, TRUE),
-('10000000-0000-0000-0000-000000000003', '22222222-2222-2222-2222-222222222222', 'mike.smith@example.com', '$2b$10$examplehash3', 'Mike Smith', 'https://example.com/avatar3.jpg', CURRENT_TIMESTAMP, TRUE),
-('10000000-0000-0000-0000-000000000004', '22222222-2222-2222-2222-222222222222', 'sarah.smith@example.com', '$2b$10$examplehash4', 'Sarah Smith', 'https://example.com/avatar4.jpg', CURRENT_TIMESTAMP, TRUE);
+('10000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'john.doe@example.com', '$2a$12$QeH7JeDRSiU2D16EKXd9e.gzDxFMxf97RTIH/lYzf6OcA0nA5OWZu', 'John Doe', 'https://example.com/avatar1.jpg', CURRENT_TIMESTAMP, TRUE),
+('10000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'jane.doe@example.com', '$2a$12$QeH7JeDRSiU2D16EKXd9e.gzDxFMxf97RTIH/lYzf6OcA0nA5OWZu', 'Jane Doe', 'https://example.com/avatar2.jpg', CURRENT_TIMESTAMP, TRUE),
+('10000000-0000-0000-0000-000000000003', '22222222-2222-2222-2222-222222222222', 'mike.smith@example.com', '$2a$12$QeH7JeDRSiU2D16EKXd9e.gzDxFMxf97RTIH/lYzf6OcA0nA5OWZu', 'Mike Smith', 'https://example.com/avatar3.jpg', CURRENT_TIMESTAMP, TRUE),
+('10000000-0000-0000-0000-000000000004', '22222222-2222-2222-2222-222222222222', 'sarah.smith@example.com', '$2a$12$QeH7JeDRSiU2D16EKXd9e.gzDxFMxf97RTIH/lYzf6OcA0nA5OWZu', 'Sarah Smith', 'https://example.com/avatar4.jpg', CURRENT_TIMESTAMP, TRUE);
 
 -- Update family accounts with creator user IDs
 UPDATE family_accounts SET created_by_user_id = '10000000-0000-0000-0000-000000000001' WHERE family_account_id = '11111111-1111-1111-1111-111111111111';
@@ -38,7 +38,7 @@ INSERT INTO transactions (transaction_id, family_account_id, user_id, amount, ca
 
 -- Insert Test Transactions - Smith Family
 INSERT INTO transactions (transaction_id, family_account_id, user_id, amount, category_id, description, transaction_date, is_recurring, recurrence_pattern) VALUES
-('40000000-0000-0000-0000-000000000007', '22222222-2222-2222-2222-222222222222', '10000000-0000-0000-0000-000000000003', 75000.00, (SELECT category_id FROM categories WHERE category_name = 'Salary'), 'Bi-weekly Paycheck', '2024-01-01', TRUE, 'biweekly'),
+('40000000-0000-0000-0000-000000000007', '22222222-2222-2222-2222-222222222222', '10000000-0000-0000-0000-000000000003', 75000.00, (SELECT category_id FROM categories WHERE category_name = 'Salary'), 'Bi-weekly Paycheck', '2024-01-01', TRUE, 'weekly'),
 ('40000000-0000-0000-0000-000000000008', '22222222-2222-2222-2222-222222222222', '10000000-0000-0000-0000-000000000004', -9800.00, (SELECT category_id FROM categories WHERE category_name = 'Food'), 'Monthly Grocery Stock-up', '2024-01-03', TRUE, 'monthly'),
 ('40000000-0000-0000-0000-000000000009', '22222222-2222-2222-2222-222222222222', '10000000-0000-0000-0000-000000000003', -12000.00, (SELECT category_id FROM categories WHERE category_name = 'Monthly Bills & EMIs'), 'Mortgage Payment', '2024-01-05', TRUE, 'monthly'),
 ('40000000-0000-0000-0000-000000000010', '22222222-2222-2222-2222-222222222222', '10000000-0000-0000-0000-000000000004', -3500.00, (SELECT category_id FROM categories WHERE category_name = 'Transportation'), 'Car Maintenance and Fuel', '2024-01-08', FALSE, NULL),

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { dashboardAPI, transactionsAPI, categoriesAPI, budgetsAPI } from '../services/api';
 
 const BudgetContext = createContext();
 
@@ -38,43 +39,85 @@ export const BudgetProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // In a real implementation, these would be separate API calls
-      // For now, we'll simulate the data structure
+      console.log('Fetching real dashboard data from API...');
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fetch dashboard overview data
+      const [overviewResponse, recentResponse, categoriesResponse] = await Promise.all([
+        dashboardAPI.getOverview(),
+        transactionsAPI.getRecent(),
+        categoriesAPI.getDefault()
+      ]);
       
-      // Mock data - replace with actual API calls
+      console.log('API Responses:', {
+        overview: overviewResponse.data,
+        recent: recentResponse.data,
+        categories: categoriesResponse.data
+      });
+      
+      // Process overview data
+      const overviewData = overviewResponse.data;
+      const summary = {
+        totalIncome: overviewData.total_income || 0,
+        totalExpenses: Math.abs(overviewData.total_expenses) || 0,
+        remaining: overviewData.total_savings || 0,
+        remainingPercentage: overviewData.savings_percentage || 0
+      };
+      
+      // Process recent transactions
+      const transactions = (recentResponse.data.transactions || []).map(tx => ({
+        id: tx.transaction_id,
+        description: tx.description,
+        category: tx.category_name,
+        amount: parseFloat(tx.amount),
+        date: tx.transaction_date,
+        addedBy: tx.added_by_user_name || 'Unknown'
+      }));
+      
+      // Process category breakdown
+      const categories = (categoriesResponse.data.categories || []).map(cat => ({
+        name: cat.category_name,
+        amount: Math.abs(parseFloat(cat.total_amount) || 0),
+        color: cat.color_code || '#CCCCCC',
+        icon: cat.icon || '💰'
+      }));
+      
+      setCurrentMonthSummary(summary);
+      setRecentTransactions(transactions);
+      setCategoryBreakdown(categories);
+      
+      console.log('Dashboard data updated:', { summary, transactions, categories });
+      
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError(`Failed to load dashboard data: ${err.response?.data?.message || err.message}`);
+      
+      // Fallback to mock data if API fails
       const mockSummary = {
-        totalIncome: 50000,
-        totalExpenses: 35000,
-        remaining: 15000,
-        remainingPercentage: 30
+        totalIncome: 85000,
+        totalExpenses: 62500,
+        remaining: 22500,
+        remainingPercentage: 26.5
       };
       
       const mockTransactions = [
-        { description: 'Salary Deposit', category: 'Salary', amount: 50000, date: '2024-01-01' },
-        { description: 'Grocery Shopping', category: 'Food', amount: -2500, date: '2024-01-05' },
-        { description: 'Electricity Bill', category: 'Monthly Bills & EMIs', amount: -1200, date: '2024-01-10' },
-        { description: 'Movie Tickets', category: 'Entertainment', amount: -800, date: '2024-01-12' },
-        { description: 'Mutual Fund SIP', category: 'Investments', amount: -5000, date: '2024-01-15' }
+        { description: 'Monthly Salary Deposit', category: 'Salary', amount: 85000, date: '2024-01-01', addedBy: 'System' },
+        { description: 'Weekly Grocery Shopping', category: 'Food', amount: -12500, date: '2024-01-05', addedBy: 'System' },
+        { description: 'Electricity and Internet Bill', category: 'Monthly Bills & EMIs', amount: -8200, date: '2024-01-10', addedBy: 'System' },
+        { description: 'Movie Night Out', category: 'Entertainment', amount: -2800, date: '2024-01-12', addedBy: 'System' },
+        { description: 'Monthly Mutual Fund SIP', category: 'Investments', amount: -15000, date: '2024-01-15', addedBy: 'System' }
       ];
       
       const mockCategories = [
-        { name: 'Food', amount: 2500, color: '#FF9800' },
-        { name: 'Monthly Bills & EMIs', amount: 1200, color: '#F44336' },
-        { name: 'Entertainment', amount: 800, color: '#E91E63' },
-        { name: 'Investments', amount: 5000, color: '#3F51B5' },
-        { name: 'Long Term', amount: 0, color: '#9C27B0' }
+        { name: 'Food', amount: 12500, color: '#FF9800', icon: '🍔' },
+        { name: 'Monthly Bills & EMIs', amount: 8200, color: '#F44336', icon: '🏠' },
+        { name: 'Entertainment', amount: 2800, color: '#E91E63', icon: '🎬' },
+        { name: 'Investments', amount: 15000, color: '#3F51B5', icon: '📈' },
+        { name: 'Long Term', amount: 5000, color: '#9C27B0', icon: '🏦' }
       ];
       
       setCurrentMonthSummary(mockSummary);
       setRecentTransactions(mockTransactions);
       setCategoryBreakdown(mockCategories);
-      
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/database');
+const { pool } = require('../config/database');
 
 // Register new user
 const registerUser = async (req, res) => {
@@ -214,6 +214,52 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Get user profile
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    
+    // Demo user profile
+    if (userId === 'demo-user-id-123') {
+      return res.json({
+        userId: 'demo-user-id-123',
+        email: 'user@example.com',
+        fullName: 'Demo User',
+        familyAccountId: 'demo-family-id-123',
+        familyAccountName: 'Demo Family'
+      });
+    }
+    
+    // Real database query
+    const userResult = await pool.query(
+      `SELECT u.user_id, u.email, u.full_name, u.family_account_id, 
+              f.account_name as family_account_name
+       FROM users u
+       LEFT JOIN family_accounts f ON u.family_account_id = f.family_account_id
+       WHERE u.user_id = $1 AND u.is_active = TRUE`,
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    res.json({
+      userId: user.user_id,
+      email: user.email,
+      fullName: user.full_name,
+      familyAccountId: user.family_account_id,
+      familyAccountName: user.family_account_name
+    });
+    
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ message: 'Server error retrieving profile' });
+  }
+};
+
 // Logout user
 const logoutUser = async (req, res) => {
   try {
@@ -229,5 +275,6 @@ const logoutUser = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
-  logoutUser
+  logoutUser,
+  getUserProfile
 };

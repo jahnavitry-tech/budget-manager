@@ -59,6 +59,7 @@ function App() {
                 } 
               />
               <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/test" element={<div style={{padding: '2rem'}}><h1>Test Route Working!</h1></div>} />
             </Routes>
           </div>
         </Router>

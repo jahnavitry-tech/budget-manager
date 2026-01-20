@@ -23,9 +23,10 @@ pool.on('error', (err) => {
 // Export both the pool and a connect function
 const connectDB = async () => {
   try {
-    if (process.env.NODE_ENV === 'production') {
-      // Production: Connect to Supabase
-      console.log('Connecting to Supabase production database...');
+    // Check if we have Supabase credentials configured
+    if (process.env.DB_HOST && process.env.DB_HOST.includes('supabase')) {
+      // Supabase: Connect to production database
+      console.log('Connecting to Supabase database...');
       // Test connection
       const client = await pool.connect();
       client.release();
