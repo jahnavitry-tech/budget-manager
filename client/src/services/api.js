@@ -4,7 +4,7 @@ import axios from 'axios';
 const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = isDevelopment 
   ? 'http://localhost:5001/api'  // Local development
-  : '/api';  // Production (Vercel will proxy to backend)
+  : 'https://budget-manager-backend-5m32.onrender.com/api';  // Production - REPLACE with your actual Render URL
 
 console.log('API Base URL:', API_BASE_URL, 'Environment:', isDevelopment ? 'development' : 'production');
 
