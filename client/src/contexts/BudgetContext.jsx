@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
 import { useAuth } from './AuthContext';
 import { dashboardAPI, transactionsAPI, categoriesAPI, budgetsAPI } from '../services/api';
 
@@ -25,11 +24,20 @@ export const BudgetProvider = ({ children }) => {
   // Fetch dashboard data
   useEffect(() => {
     console.log('BudgetContext - user:', user, 'token:', token);
-    if (user && token) {
+    
+    // Only fetch if we have both user and token and user is fully loaded
+    if (user && token && user.userId) {
       console.log('Fetching dashboard data...');
       fetchDashboardData();
+    } else if (!user && !token) {
+      // Clear data when logged out
+      console.log('Clearing dashboard data - user logged out');
+      setCurrentMonthSummary(null);
+      setRecentTransactions([]);
+      setCategoryBreakdown([]);
+      setLoading(false);
     } else {
-      console.log('Not fetching - missing user or token');
+      console.log('Not fetching - missing user or token or user not fully loaded');
       setLoading(false);
     }
   }, [user, token]);
@@ -75,7 +83,9 @@ export const BudgetProvider = ({ children }) => {
       
       // Process category breakdown
       const categories = (categoriesResponse.data.categories || []).map(cat => ({
+        id: cat.category_id,
         name: cat.category_name,
+        type: cat.category_type,
         amount: Math.abs(parseFloat(cat.total_amount) || 0),
         color: cat.color_code || '#CCCCCC',
         icon: cat.icon || '💰'
@@ -108,11 +118,11 @@ export const BudgetProvider = ({ children }) => {
       ];
       
       const mockCategories = [
-        { name: 'Food', amount: 12500, color: '#FF9800', icon: '🍔' },
-        { name: 'Monthly Bills & EMIs', amount: 8200, color: '#F44336', icon: '🏠' },
-        { name: 'Entertainment', amount: 2800, color: '#E91E63', icon: '🎬' },
-        { name: 'Investments', amount: 15000, color: '#3F51B5', icon: '📈' },
-        { name: 'Long Term', amount: 5000, color: '#9C27B0', icon: '🏦' }
+        { id: '9796595e-b4b4-44f5-bc57-ac623c735003', name: 'Food', amount: 12500, color: '#FF9800', icon: '🍔' },
+        { id: 'bills-category-id-mock-uuid-12345', name: 'Monthly Bills & EMIs', amount: 8200, color: '#F44336', icon: '🏠' },
+        { id: 'entertainment-category-id-mock-uuid', name: 'Entertainment', amount: 2800, color: '#E91E63', icon: '🎬' },
+        { id: 'investments-category-id-mock-uuid-', name: 'Investments', amount: 15000, color: '#3F51B5', icon: '📈' },
+        { id: 'longterm-category-id-mock-uuid-ab', name: 'Long Term', amount: 5000, color: '#9C27B0', icon: '🏦' }
       ];
       
       setCurrentMonthSummary(mockSummary);
@@ -126,7 +136,7 @@ export const BudgetProvider = ({ children }) => {
   const addTransaction = async (transactionData) => {
     try {
       // API call to add transaction
-      const response = await axios.post('/api/transactions', transactionData);
+      const response = await transactionsAPI.create(transactionData);
       // Refresh dashboard data
       await fetchDashboardData();
       return response.data;
@@ -139,7 +149,7 @@ export const BudgetProvider = ({ children }) => {
   const updateTransaction = async (transactionId, transactionData) => {
     try {
       // API call to update transaction
-      const response = await axios.put(`/api/transactions/${transactionId}`, transactionData);
+      const response = await transactionsAPI.update(transactionId, transactionData);
       // Refresh dashboard data
       await fetchDashboardData();
       return response.data;
@@ -152,7 +162,7 @@ export const BudgetProvider = ({ children }) => {
   const deleteTransaction = async (transactionId) => {
     try {
       // API call to delete transaction
-      await axios.delete(`/api/transactions/${transactionId}`);
+      await transactionsAPI.delete(transactionId);
       // Refresh dashboard data
       await fetchDashboardData();
     } catch (err) {
@@ -164,7 +174,7 @@ export const BudgetProvider = ({ children }) => {
   const setBudgetLimit = async (budgetData) => {
     try {
       // API call to set budget limit
-      const response = await axios.post('/api/budgets', budgetData);
+      const response = await budgetsAPI.create(budgetData);
       // Refresh dashboard data
       await fetchDashboardData();
       return response.data;

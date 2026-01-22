@@ -4,17 +4,20 @@ import axios from 'axios';
 const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = isDevelopment 
   ? 'http://localhost:5001/api'  // Local development
-  : 'https://budget-manager-backend-5m32.onrender.com/api';  // Production - REPLACE with your actual Render URL
+  : 'https://budget-manager-backend-5m32.onrender.com/api';  // Production
 
 console.log('API Base URL:', API_BASE_URL, 'Environment:', isDevelopment ? 'development' : 'production');
 
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
+  // Add retry configuration
+  retry: 3,
+  retryDelay: 1000
 });
 
 // Add request interceptor to include auth token
@@ -34,13 +37,30 @@ api.interceptors.request.use(
 // Add response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const { config } = error;
+    
+    // Handle 401 unauthorized
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
+    
+    // Handle timeout/network errors with retry
+    if ((error.code === 'ECONNABORTED' || error.message.includes('timeout')) && config.retryCount < 3) {
+      config.retryCount = config.retryCount || 0;
+      config.retryCount++;
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, config.retryCount * 1000));
+      
+      console.log(`Retrying request (${config.retryCount}/3)...`);
+      return api(config);
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -57,7 +77,11 @@ export const authAPI = {
 export const transactionsAPI = {
   getAll: (params) => api.get('/transactions', { params }),
   getById: (id) => api.get(`/transactions/${id}`),
-  create: (data) => api.post('/transactions', data),
+  create: (data) => {
+    console.log('API: Creating transaction with data:', data);
+    console.log('API: Category ID being sent:', data.categoryId);
+    return api.post('/transactions', data);
+  },
   update: (id, data) => api.put(`/transactions/${id}`, data),
   delete: (id) => api.delete(`/transactions/${id}`),
   getRecent: () => api.get('/transactions/recent'),

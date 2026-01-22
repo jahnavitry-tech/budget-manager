@@ -6,7 +6,7 @@ import { FiPlus, FiSearch, FiFilter, FiCamera, FiUpload, FiEdit, FiTrash2, FiCal
 
 const Transactions = () => {
   const { user } = useAuth();
-  const { recentTransactions, addTransaction, updateTransaction, deleteTransaction } = useBudget();
+  const { recentTransactions, addTransaction, updateTransaction, deleteTransaction, categoryBreakdown } = useBudget();
   
   // State management
   const [transactions, setTransactions] = useState([]);
@@ -29,16 +29,18 @@ const Transactions = () => {
     transactionType: 'expense'
   });
   
-  // Categories for dropdown
-  const categories = [
-    { id: 'food', name: 'Food', icon: '🍔' },
-    { id: 'bills', name: 'Monthly Bills & EMIs', icon: '💳' },
-    { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
-    { id: 'investments', name: 'Investments', icon: '📈' },
-    { id: 'longterm', name: 'Long Term', icon: '🏠' },
-    { id: 'salary', name: 'Salary', icon: '💰' },
-    { id: 'other', name: 'Other', icon: '📦' }
-  ];
+  // Use real categories from BudgetContext instead of hardcoded ones
+  const categories = categoryBreakdown && categoryBreakdown.length > 0 
+    ? categoryBreakdown 
+    : [
+        { id: 'food', name: 'Food', icon: '🍔' },
+        { id: 'bills', name: 'Monthly Bills & EMIs', icon: '💳' },
+        { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
+        { id: 'investments', name: 'Investments', icon: '📈' },
+        { id: 'longterm', name: 'Long Term', icon: '🏠' },
+        { id: 'salary', name: 'Salary', icon: '💰' },
+        { id: 'other', name: 'Other', icon: '📦' }
+      ];
 
   // Initialize transactions data
   useEffect(() => {
@@ -101,13 +103,28 @@ const Transactions = () => {
     e.preventDefault();
     
     try {
+      console.log('=== TRANSACTION SUBMISSION DEBUG ===');
+      console.log('Form data before submission:', formData);
+      console.log('Categories available:', categories);
+      console.log('Selected category ID:', formData.category);
+      
+      // Check if the selected category exists in our categories array
+      const selectedCategory = categories.find(cat => cat.id === formData.category);
+      console.log('Selected category object:', selectedCategory);
+      
       const transactionData = {
         description: formData.description,
         amount: parseFloat(formData.amount) * (formData.transactionType === 'expense' ? -1 : 1),
-        category: formData.category,
-        transaction_date: formData.transactionDate,
-        added_by_user_id: user?.userId
+        categoryId: formData.category,
+        transactionDate: formData.transactionDate,
+        isRecurring: false,
+        recurrencePattern: null
       };
+      
+      console.log('Transaction data being sent:', transactionData);
+      console.log('Category ID type:', typeof transactionData.categoryId);
+      console.log('Category ID value:', transactionData.categoryId);
+      console.log('=====================================');
       
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, transactionData);
@@ -122,7 +139,14 @@ const Transactions = () => {
       
     } catch (error) {
       console.error('Error saving transaction:', error);
-      alert('Failed to save transaction. Please try again.');
+      console.error('Error response data:', error.response?.data);
+      
+      // Show specific error message from backend if available
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Failed to save transaction. Please try again.';
+      
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -507,11 +531,14 @@ const Transactions = () => {
                     required
                   >
                     <option value="">Select a category</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.name}>
-                        {cat.icon} {cat.name}
-                      </option>
-                    ))}
+                    {categories.map(cat => {
+                      console.log('Category option:', cat); // Debug log
+                      return (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 

@@ -1,9 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const { getBudgetLimits, setBudgetLimit, deleteBudgetLimit } = require('../controllers/budgetController');
+const { authenticateToken } = require('../middleware/auth');
 
-// Placeholder routes - will be implemented later
-router.get('/', (req, res) => {
-  res.json({ message: 'Budgets route - coming soon!' });
-});
+router.use(authenticateToken);
+
+// Get all budget limits
+router.get('/', getBudgetLimits);
+
+// Set or update budget limit
+router.post('/', setBudgetLimit);
+
+// Delete budget limit
+router.delete('/:id', deleteBudgetLimit);
 
 module.exports = router;

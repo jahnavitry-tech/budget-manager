@@ -13,6 +13,7 @@ router.get('/default', async (req, res) => {
     
     const query = `
       SELECT 
+        c.category_id,
         c.category_name,
         c.category_type,
         c.color_code,
@@ -32,6 +33,7 @@ router.get('/default', async (req, res) => {
     
     res.json({
       categories: result.rows.map(row => ({
+        category_id: row.category_id,
         category_name: row.category_name,
         category_type: row.category_type,
         color_code: row.color_code,

@@ -126,7 +126,7 @@ const loginUser = async (req, res) => {
       email: 'user@example.com',
       password: 'password123',
       full_name: 'Demo User',
-      family_account_id: 'demo-family-id-123',
+      family_account_id: '11111111-1111-1111-1111-111111111111',
       family_account_name: 'Demo Family',
       user_id: 'demo-user-id-123'
     };
@@ -225,7 +225,7 @@ const getUserProfile = async (req, res) => {
         userId: 'demo-user-id-123',
         email: 'user@example.com',
         fullName: 'Demo User',
-        familyAccountId: 'demo-family-id-123',
+        familyAccountId: '11111111-1111-1111-1111-111111111111',
         familyAccountName: 'Demo Family'
       });
     }

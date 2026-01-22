@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       console.log('Attempting login with:', email);
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await authAPI.login({ email, password });
       console.log('Login response:', response.data);
       
       const { token, user } = response.data;
@@ -72,7 +73,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await authAPI.register(userData);
       const { token, user } = response.data;
       
       setToken(token);
@@ -93,7 +94,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout');
+      await authAPI.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -112,7 +113,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user && !!token
   };
 
   return (

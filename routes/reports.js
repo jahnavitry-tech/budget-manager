@@ -1,51 +1,38 @@
 const express = require('express');
 const router = express.Router();
+const { getMonthlySummary, getAnnualReport, getCategoryBreakdown } = require('../controllers/reportController');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Apply authentication to all report routes
 router.use(authenticateToken);
 
+// Monthly summary
+router.get('/monthly/:year/:month', getMonthlySummary);
+
+// Annual report
+router.get('/annual/:year', getAnnualReport);
+
+// Category breakdown
+router.get('/category-breakdown', getCategoryBreakdown);
+
 // Dashboard Overview - Get current month summary
 router.get('/dashboard-overview', async (req, res) => {
   try {
-    const userId = req.user.user_id;
     const familyAccountId = req.user.family_account_id;
     
     // Get current month/year
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const monthYear = `${currentYear}-${currentMonth}-01`;
     
-    // Check if we have monthly summary data
-    const summaryQuery = `
-      SELECT total_income, total_expenses, total_savings 
-      FROM monthly_summaries 
-      WHERE family_account_id = $1 AND month_year = $2
-    `;
-    
-    const summaryResult = await pool.query(summaryQuery, [familyAccountId, monthYear]);
-    
-    if (summaryResult.rows.length > 0) {
-      const summary = summaryResult.rows[0];
-      const savingsPercentage = summary.total_income > 0 ? 
-        (summary.total_savings / summary.total_income) * 100 : 0;
-      
-      return res.json({
-        total_income: parseFloat(summary.total_income),
-        total_expenses: parseFloat(summary.total_expenses),
-        total_savings: parseFloat(summary.total_savings),
-        savings_percentage: parseFloat(savingsPercentage.toFixed(2))
-      });
-    }
-    
-    // Fallback: Calculate from transactions if no summary exists
-    const fallbackQuery = `
+    // Calculate from transactions for current month
+    const query = `
       SELECT 
-        COALESCE(SUM(CASE WHEN c.category_type = 'income' THEN t.amount ELSE 0 END), 0) as total_income,
-        COALESCE(SUM(CASE WHEN c.category_type = 'expense' THEN t.amount ELSE 0 END), 0) as total_expenses,
-        COALESCE(SUM(t.amount), 0) as total_savings
+        SUM(CASE WHEN c.category_type = 'income' THEN t.amount ELSE 0 END) as total_income,
+        SUM(CASE WHEN c.category_type = 'expense' THEN ABS(t.amount) ELSE 0 END) as total_expenses,
+        SUM(CASE WHEN c.category_type = 'income' THEN t.amount ELSE 0 END) - 
+        SUM(CASE WHEN c.category_type = 'expense' THEN ABS(t.amount) ELSE 0 END) as total_savings
       FROM transactions t
       JOIN categories c ON t.category_id = c.category_id
       WHERE t.family_account_id = $1 
@@ -53,17 +40,17 @@ router.get('/dashboard-overview', async (req, res) => {
       AND EXTRACT(MONTH FROM t.transaction_date) = $3
     `;
     
-    const fallbackResult = await pool.query(fallbackQuery, [familyAccountId, currentYear, currentMonth]);
+    const result = await pool.query(query, [familyAccountId, currentYear, currentMonth]);
     
-    if (fallbackResult.rows.length > 0) {
-      const data = fallbackResult.rows[0];
+    if (result.rows.length > 0) {
+      const data = result.rows[0];
       const savingsPercentage = data.total_income > 0 ? 
         (data.total_savings / data.total_income) * 100 : 0;
       
       res.json({
-        total_income: parseFloat(data.total_income),
-        total_expenses: parseFloat(Math.abs(data.total_expenses)),
-        total_savings: parseFloat(data.total_savings),
+        total_income: parseFloat(data.total_income || 0),
+        total_expenses: parseFloat(data.total_expenses || 0),
+        total_savings: parseFloat(data.total_savings || 0),
         savings_percentage: parseFloat(savingsPercentage.toFixed(2))
       });
     } else {
@@ -81,7 +68,7 @@ router.get('/dashboard-overview', async (req, res) => {
   }
 });
 
-// Get recent transactions
+// Recent activity
 router.get('/recent-activity', async (req, res) => {
   try {
     const familyAccountId = req.user.family_account_id;
@@ -121,55 +108,7 @@ router.get('/recent-activity', async (req, res) => {
   }
 });
 
-// Get category breakdown
-router.get('/category-breakdown', async (req, res) => {
-  try {
-    const familyAccountId = req.user.family_account_id;
-    const { start, end } = req.query;
-    
-    let dateCondition = '';
-    const queryParams = [familyAccountId];
-    
-    if (start && end) {
-      dateCondition = 'AND t.transaction_date BETWEEN $2 AND $3';
-      queryParams.push(start, end);
-    }
-    
-    const query = `
-      SELECT 
-        c.category_name,
-        c.category_type,
-        c.color_code,
-        c.icon,
-        SUM(t.amount) as total_amount,
-        COUNT(t.transaction_id) as transaction_count
-      FROM categories c
-      LEFT JOIN transactions t ON c.category_id = t.category_id ${dateCondition}
-      WHERE c.family_account_id = $1
-      GROUP BY c.category_id, c.category_name, c.category_type, c.color_code, c.icon
-      ORDER BY ABS(SUM(t.amount)) DESC
-    `;
-    
-    const result = await pool.query(query, queryParams);
-    
-    res.json({
-      categories: result.rows.map(row => ({
-        category_name: row.category_name,
-        category_type: row.category_type,
-        color_code: row.color_code,
-        icon: row.icon,
-        total_amount: parseFloat(row.total_amount || 0),
-        transaction_count: parseInt(row.transaction_count)
-      }))
-    });
-    
-  } catch (error) {
-    console.error('Category breakdown error:', error);
-    res.status(500).json({ message: 'Failed to fetch category breakdown' });
-  }
-});
-
-// Quick stats
+// Quick stats (keeping existing implementation)
 router.get('/quick-stats', async (req, res) => {
   try {
     const familyAccountId = req.user.family_account_id;
